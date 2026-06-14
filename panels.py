@@ -89,7 +89,7 @@ class KIMODO_PT_Connection(KIMODO_PanelBase, Panel):
             else:
                 box.label(text="Kimodo not installed", icon='INFO')
             box.label(text="Installs to:  ~/.kimodo-venv/")
-            box.label(text="Requires:  Python 3.10+, ~8 GB disk, internet")
+            box.label(text="Requires:  Python 3.10 - 3.12, ~8 GB disk, internet")
             try:
                 prefs = context.preferences.addons[__package__].preferences
                 token_row = box.row(align=True)
