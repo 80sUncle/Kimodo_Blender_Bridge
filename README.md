@@ -12,6 +12,10 @@ A Blender addon that generates AI-driven human motion via [NVIDIA Kimodo](https:
  </picture>
 </a>
 
+## Links / Video guide
+Youtube tutorial: https://youtu.be/nbiaS43Ncng
+Superhive: https://superhivemarket.com/products/kimodoblenderbridge
+
 ---
 
 ## Tested on 
