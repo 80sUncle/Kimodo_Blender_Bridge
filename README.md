@@ -2,6 +2,16 @@
 
 A Blender addon that generates AI-driven human motion via [NVIDIA Kimodo](https://github.com/nv-tlabs/kimodo) and imports it directly into your scene — no copy-pasting, no manual BVH wrangling.
 
+## Star History
+
+<a href="https://www.star-history.com/?repos=lewdineer%2FKimodo_Blender_Bridge&type=date&legend=top-left">
+ <picture>
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=lewdineer/Kimodo_Blender_Bridge&type=date&theme=dark&legend=top-left" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=lewdineer/Kimodo_Blender_Bridge&type=date&legend=top-left" />
+   <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=lewdineer/Kimodo_Blender_Bridge&type=date&legend=top-left" />
+ </picture>
+</a>
+
 Tested on 
 **Blender 5.1 / 4.4**
 
@@ -191,13 +201,3 @@ To add a constraint:
 ## License
 
 See [LICENSE](LICENSE).
-
-## Star History
-
-<a href="https://www.star-history.com/?repos=lewdineer%2FKimodo_Blender_Bridge&type=date&legend=top-left">
- <picture>
-   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=lewdineer/Kimodo_Blender_Bridge&type=date&theme=dark&legend=top-left" />
-   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=lewdineer/Kimodo_Blender_Bridge&type=date&legend=top-left" />
-   <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=lewdineer/Kimodo_Blender_Bridge&type=date&legend=top-left" />
- </picture>
-</a>
