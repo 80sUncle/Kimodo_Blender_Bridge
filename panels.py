@@ -114,7 +114,7 @@ class KIMODO_PT_Connection(KIMODO_PanelBase, Panel):
                 token_row.prop(prefs, "hf_token", text="")
                 box.label(text="Python 3.10–3.12 executable (Please select it manually if install fails):",
                           icon='CONSOLE')
-                box.label(text="Select the python3.12 / python.exe file directly",
+                box.label(text="Select the python 3.10-3.12 / python.exe file directly if install fails",
                           icon='BLANK1')
                 box.prop(prefs, "system_python_override", text="")
                 box.label(text="Install location (blank = default ~/.kimodo-venv):",
