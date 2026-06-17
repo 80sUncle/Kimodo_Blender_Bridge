@@ -151,6 +151,11 @@ class KIMODO_PT_Connection(KIMODO_PanelBase, Panel):
         row.prop(s, "kimodo_model", text="")
         row.enabled = not running
 
+        # --- Offload toggle ---
+        row = layout.row(align=True)
+        row.prop(s, "use_offload", text="Enable Memory Offload")
+        row.enabled = not running
+
         layout.separator(factor=0.5)
 
         # --- Start / Stop buttons ---

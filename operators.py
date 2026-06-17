@@ -156,11 +156,11 @@ class KIMODO_OT_StartKimodo(Operator):
     _timer  = None
     _thread = None
 
-    def _run_start(self, python_exe: str, model_name: str):
+    def _run_start(self, python_exe: str, model_name: str, use_offload: bool):
         def progress(msg):
             _start_state["message"] = msg
 
-        success, msg = sc.start(python_exe, model_name, progress_callback=progress)
+        success, msg = sc.start(python_exe, model_name, use_offload=use_offload, progress_callback=progress)
         _start_state["success"] = success
         _start_state["message"] = msg
         _start_state["done"]    = True
@@ -190,7 +190,7 @@ class KIMODO_OT_StartKimodo(Operator):
 
         self._thread = threading.Thread(
             target=self._run_start,
-            args=(python_hint, s.kimodo_model),
+            args=(python_hint, s.kimodo_model, s.use_offload),
             daemon=True,
         )
         self._thread.start()
