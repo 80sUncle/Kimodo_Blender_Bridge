@@ -121,12 +121,15 @@ def _step_seed_after_generation(owner) -> None:
 _HISTORY_MAX = 20
 
 
-def _push_history(s, prompt: str, seed: int, duration: float, bvh_path: str) -> None:
-    """Prepend a new entry to generation_history, keeping newest-first, capped at _HISTORY_MAX."""
+def _push_history(s, prompt: str, seed: int, duration: float, bvh_path: str,
+                  seeds: "list[int] | None" = None) -> None:
+    """Prepend a new entry to generation_history, keeping newest-first, capped at _HISTORY_MAX.
+    `seeds` carries the per-segment seeds of a multi-prompt generation."""
     import datetime
     entry = s.generation_history.add()
     entry.prompt    = prompt
     entry.seed      = seed
+    entry.seeds     = ", ".join(str(x) for x in seeds) if seeds else ""
     entry.duration  = duration
     entry.bvh_path  = bvh_path
     entry.timestamp = datetime.datetime.now().isoformat(timespec='seconds')
@@ -1206,6 +1209,7 @@ class KIMODO_OT_GenerateAllSegments(Operator):
     _segment_indices: list = []
     _start_frame: int = 1
     _resolved_seed: int = -1
+    _resolved_seeds: list = []
 
     def invoke(self, context, event):
         s = context.scene.kimodo
@@ -1242,6 +1246,7 @@ class KIMODO_OT_GenerateAllSegments(Operator):
         seeds = [seg.seed if seg.seed >= 0 else random.randint(0, 2**31 - 1) for _, seg in ordered]
         seed = seeds[0]
         self._resolved_seed = seed
+        self._resolved_seeds = list(seeds)
         print(f"[Kimodo] Generating {len(seeds)} segments with seeds {seeds}", flush=True)
 
         # Build constraints relative to the start of the combined sequence
@@ -1327,7 +1332,8 @@ class KIMODO_OT_GenerateAllSegments(Operator):
             fps = context.scene.render.fps / context.scene.render.fps_base
             prompt = " | ".join(seg.prompt for seg in generated_segments)
             duration = sum((seg.end_frame - seg.start_frame + 1) / fps for seg in generated_segments)
-            _push_history(s, prompt, self._resolved_seed, duration, file_path)
+            _push_history(s, prompt, self._resolved_seed, duration, file_path,
+                          seeds=self._resolved_seeds)
             for seg in generated_segments:
                 _step_seed_after_generation(seg)
 

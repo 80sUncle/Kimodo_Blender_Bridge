@@ -193,6 +193,9 @@ class KIMODO_HistoryEntry(PropertyGroup):
     """One entry in the rolling generation history."""
     prompt: StringProperty(name="Prompt", default="")
     seed: IntProperty(name="Seed", default=0)
+    # Comma-separated per-segment seeds for multi-prompt generations
+    # (empty for single-prompt entries and entries from older versions)
+    seeds: StringProperty(name="Seeds", default="")
     duration: FloatProperty(name="Duration", default=5.0)
     bvh_path: StringProperty(name="BVH Path", default="")
     timestamp: StringProperty(name="Timestamp", default="")
