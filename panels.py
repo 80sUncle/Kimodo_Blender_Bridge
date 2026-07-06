@@ -4,6 +4,7 @@ All N-panel UI panels in the 3D Viewport → Kimodo tab.
 """
 
 import os
+import textwrap
 
 import bpy
 import json
@@ -18,6 +19,82 @@ class KIMODO_PanelBase:
     bl_space_type  = 'VIEW_3D'
     bl_region_type = 'UI'
     bl_category    = 'Kimodo'
+
+
+# ---------------------------------------------------------------------------
+# Generation history (shared by Quick Generate + Motion Segments panels)
+# ---------------------------------------------------------------------------
+
+def _label_wrapped(col, text, context, icon='NONE'):
+    """Labels don't wrap on their own, so long prompts (e.g. 5+ joined
+    segment prompts) were cut off. Emit the text as multiple labels sized
+    to the panel width instead."""
+    try:
+        ui_scale = context.preferences.system.ui_scale
+    except Exception:
+        ui_scale = 1.0
+    width_px = context.region.width if context.region else 320
+    chars = max(24, int(width_px / (7 * ui_scale)) - 4)
+    for i, line in enumerate(textwrap.wrap(text, width=chars) or [""]):
+        col.label(text=line, icon=icon if i == 0 else 'BLANK1')
+
+
+def _draw_history_detail(layout, context, entry):
+    """Selected entry: full wrapped prompt(s) with the seed(s) used."""
+    col = layout.column(align=True)
+    prompts = [p.strip() for p in entry.prompt.split(" | ")] if entry.prompt else [""]
+    seed_list = [x.strip() for x in entry.seeds.split(",") if x.strip()] if entry.seeds else []
+
+    if len(prompts) > 1:
+        # Multi-segment generation: one line per segment with its own seed
+        for i, p in enumerate(prompts):
+            seed_txt = f"   (seed {seed_list[i]})" if i < len(seed_list) else ""
+            _label_wrapped(col, f"{i + 1}.  {p}{seed_txt}", context,
+                           icon='TEXT' if i == 0 else 'BLANK1')
+        meta = f"{entry.duration:.1f}s total  ·  {entry.timestamp.replace('T', ' ')}"
+        if not seed_list:  # entry from a version that only stored the first seed
+            meta = f"Seed: {entry.seed}  ·  {meta}"
+    else:
+        _label_wrapped(col, entry.prompt, context, icon='TEXT')
+        meta = f"Seed: {entry.seed}  ·  {entry.duration:.1f}s  ·  {entry.timestamp.replace('T', ' ')}"
+
+    meta_col = layout.column(align=True)
+    _label_wrapped(meta_col, meta, context, icon='TIME')
+
+
+def _draw_history(layout, context, s):
+    layout.separator()
+    hist_header = layout.row(align=True)
+    hist_header.prop(
+        s, "history_expanded",
+        icon='DISCLOSURE_TRI_DOWN' if s.history_expanded else 'DISCLOSURE_TRI_RIGHT',
+        icon_only=True, emboss=False,
+    )
+    hist_header.label(
+        text=f"History ({len(s.generation_history)})", icon='TIME'
+    )
+    if not s.history_expanded:
+        return
+    if not s.generation_history:
+        layout.label(text="No generations yet.", icon='INFO')
+    else:
+        layout.template_list(
+            "KIMODO_UL_History", "",
+            s, "generation_history",
+            s, "history_index",
+            rows=min(len(s.generation_history), 5),
+        )
+        if 0 <= s.history_index < len(s.generation_history):
+            entry = s.generation_history[s.history_index]
+            detail = layout.box()
+            _draw_history_detail(detail, context, entry)
+            op_row = detail.row(align=True)
+            reimport_op = op_row.operator(
+                "kimodo.reimport_from_history",
+                text="Re-import BVH", icon='IMPORT',
+            )
+            reimport_op.index = s.history_index
+    layout.operator("kimodo.clear_history", text="Clear History", icon='TRASH')
 
 
 # ---------------------------------------------------------------------------
@@ -312,7 +389,12 @@ class KIMODO_PT_Segments(KIMODO_PanelBase, Panel):
             row3 = col.row(align=True)
             row3.label(text=f"  {dur:.1f}s · {seg.end_frame - seg.start_frame + 1} frames",
                       icon='TIME')
-            row3.prop(seg, "seed", text="Seed")
+            seed_field = row3.row(align=True)
+            seed_field.enabled = seg.seed_mode != 'RANDOM'
+            seed_field.prop(seg, "seed", text="Seed")
+            seed_modes = row3.row(align=True)
+            seed_modes.alignment = 'RIGHT'
+            seed_modes.prop(seg, "seed_mode", expand=True)
 
 
 
@@ -346,40 +428,7 @@ class KIMODO_PT_Segments(KIMODO_PanelBase, Panel):
             box2.operator("kimodo.cancel_generation", text="Cancel", icon='X')
 
         # --- Generation History ---
-        layout.separator()
-        hist_header = layout.row(align=True)
-        hist_header.prop(
-            s, "history_expanded",
-            icon='DISCLOSURE_TRI_DOWN' if s.history_expanded else 'DISCLOSURE_TRI_RIGHT',
-            icon_only=True, emboss=False,
-        )
-        hist_header.label(
-            text=f"History ({len(s.generation_history)})", icon='TIME'
-        )
-        if s.history_expanded:
-            if not s.generation_history:
-                layout.label(text="No generations yet.", icon='INFO')
-            else:
-                layout.template_list(
-                    "KIMODO_UL_History", "",
-                    s, "generation_history",
-                    s, "history_index",
-                    rows=min(len(s.generation_history), 5),
-                )
-                if 0 <= s.history_index < len(s.generation_history):
-                    entry = s.generation_history[s.history_index]
-                    detail = layout.box()
-                    detail.label(text=entry.prompt, icon='TEXT')
-                    detail.label(
-                        text=f"Seed: {entry.seed}  |  {entry.duration:.1f}s  |  {entry.timestamp}"
-                    )
-                    op_row = detail.row(align=True)
-                    reimport_op = op_row.operator(
-                        "kimodo.reimport_from_history",
-                        text="Re-import BVH", icon='IMPORT',
-                    )
-                    reimport_op.index = s.history_index
-            layout.operator("kimodo.clear_history", text="Clear History", icon='TRASH')
+        _draw_history(layout, context, s)
 
 
 
@@ -410,9 +459,14 @@ class KIMODO_PT_Generate(KIMODO_PanelBase, Panel):
         layout.prop(s, "prompt", text="")
 
         # Duration + Seed
-        split = layout.split(factor=0.6)
-        split.prop(s, "duration", slider=True)
-        split.prop(s, "seed")
+        layout.prop(s, "duration", slider=True)
+        seed_row = layout.row(align=True)
+        seed_field = seed_row.row(align=True)
+        seed_field.enabled = s.seed_mode != 'RANDOM'
+        seed_field.prop(s, "seed")
+        seed_modes = seed_row.row(align=True)
+        seed_modes.alignment = 'RIGHT'
+        seed_modes.prop(s, "seed_mode", expand=True)
 
         # Output format
         row = layout.row(align=True)
@@ -472,40 +526,7 @@ class KIMODO_PT_Generate(KIMODO_PanelBase, Panel):
         )
 
         # --- Generation History ---
-        layout.separator()
-        hist_header = layout.row(align=True)
-        hist_header.prop(
-            s, "history_expanded",
-            icon='DISCLOSURE_TRI_DOWN' if s.history_expanded else 'DISCLOSURE_TRI_RIGHT',
-            icon_only=True, emboss=False,
-        )
-        hist_header.label(
-            text=f"History ({len(s.generation_history)})", icon='TIME'
-        )
-        if s.history_expanded:
-            if not s.generation_history:
-                layout.label(text="No generations yet.", icon='INFO')
-            else:
-                layout.template_list(
-                    "KIMODO_UL_History", "",
-                    s, "generation_history",
-                    s, "history_index",
-                    rows=min(len(s.generation_history), 5),
-                )
-                if 0 <= s.history_index < len(s.generation_history):
-                    entry = s.generation_history[s.history_index]
-                    detail = layout.box()
-                    detail.label(text=entry.prompt, icon='TEXT')
-                    detail.label(
-                        text=f"Seed: {entry.seed}  |  {entry.duration:.1f}s  |  {entry.timestamp}"
-                    )
-                    op_row = detail.row(align=True)
-                    reimport_op = op_row.operator(
-                        "kimodo.reimport_from_history",
-                        text="Re-import BVH", icon='IMPORT',
-                    )
-                    reimport_op.index = s.history_index
-            layout.operator("kimodo.clear_history", text="Clear History", icon='TRASH')
+        _draw_history(layout, context, s)
 
         # Manual import fallback
         layout.separator()

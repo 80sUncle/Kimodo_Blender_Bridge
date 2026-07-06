@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.5.6] — 2026-07-06
+
+### Added
+
+- **ComfyUI-style seed control** (#40): The seed field in *Quick Generate* and on each *Motion Segment* now has four mode buttons — pin (don't edit), plus / minus (step the seed by 1 after every successful generation), and randomize (new random seed each time). Exactly one mode is always active. Selecting randomize grays the seed field out at -1 and remembers the previous seed; switching back to any other mode restores it. New / duplicated segments and *Sync Seeds* carry the mode over, and the seed actually used is printed to the System Console for reproducibility (it was already recorded in the generation history).
+
+### Changed
+
+- **Generation history rehaul**: Each history row now shows the seed next to the duration (with a `…` marker for multi-segment entries), and the row's stats hug the right so the prompt gets the remaining width. The detail view wraps long prompts across multiple lines instead of cutting them off, and multi-segment generations are listed one numbered line per segment *with the seed each segment actually used* — previously only the first segment's seed was recorded. The duplicated history UI in the Quick Generate and Motion Segments panels was consolidated into one shared implementation.
+
+### Fixed
+
+- **Generate button permanently stuck on "Cancelling…"** (#43): `is_generating` is a scene property, so a file saved mid-generation (or an undo step restoring that state) baked the "generating" flag into the .blend — on reload the Generate button stayed grayed behind a Cancel that had nothing to cancel, and restarting Blender/Kimodo couldn't fix it. The transient generation state is now cleared whenever a file is loaded and once when the addon is enabled (so files locked by older versions heal on the spot), and the Cancel button itself resets the state when no job is actually running.
+
 ## [1.5.5] — 2026-06-24
 
 ### Fixed
